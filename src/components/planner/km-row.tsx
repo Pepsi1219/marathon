@@ -28,7 +28,7 @@ export function KmRow({ split, alt, onNudgePace, onResetPace, onToggleWater, onT
     >
       {isOverridden && <span className="absolute inset-y-1 left-0 w-1 rounded-full bg-primary" aria-hidden />}
 
-      <div className="flex min-w-0 shrink-0 flex-col gap-0.5 sm:w-28 sm:flex-row sm:items-center sm:gap-2">
+      <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:w-28 sm:gap-2">
         <span className="flex items-baseline gap-1 text-sm font-semibold tabular-nums sm:text-base">
           <span className="text-muted-foreground/70">#</span>
           {split.index}

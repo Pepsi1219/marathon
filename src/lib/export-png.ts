@@ -1,15 +1,25 @@
 import { toPng } from "html-to-image";
 
-/** Renders a DOM node to a PNG and triggers a download. */
 export async function exportNodeToPng(node: HTMLElement, filename: string) {
+  const name = filename.endsWith(".png") ? filename : `${filename}.png`;
   const dataUrl = await toPng(node, {
     pixelRatio: 2,
     cacheBust: true,
-    // The sheet paints its own background; make sure transparent areas aren't black.
     backgroundColor: "#ffffff",
   });
+
+  const blob = await (await fetch(dataUrl)).blob();
+  const file = new File([blob], name, { type: "image/png" });
+
+  // On mobile, use the share sheet so the user can save directly to Photos.
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file] });
+    return;
+  }
+
+  // Desktop fallback: trigger a download.
   const link = document.createElement("a");
-  link.download = filename.endsWith(".png") ? filename : `${filename}.png`;
+  link.download = name;
   link.href = dataUrl;
   link.click();
 }
