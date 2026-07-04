@@ -1,65 +1,160 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { useRacePlan } from "@/hooks/use-race-plan";
+import { usePersistedDraft } from "@/hooks/use-persisted-draft";
+import { useAuthUser } from "@/lib/firebase/auth";
+import { savePlan, updatePlan, getPlan, applySegmentOverrides } from "@/lib/firebase/plans";
+import { buildSegments } from "@/lib/pace-engine";
+import { exportNodeToPng } from "@/lib/export-png";
+import { RaceSetupCard } from "@/components/planner/race-setup-card";
+import { PacingTable } from "@/components/planner/pacing-table";
+import { StickySummaryBar } from "@/components/planner/sticky-summary-bar";
+import { SavePlanDialog } from "@/components/planner/save-plan-dialog";
+import { SignedOutBanner } from "@/components/planner/signed-out-banner";
+import { PlanExportSheet } from "@/components/planner/plan-export-sheet";
+import { AppHeader } from "@/components/app-header";
+
+function PlannerContent() {
+  const { state, splits, summary, dispatch } = useRacePlan();
+  const { user } = useAuthUser();
+  const searchParams = useSearchParams();
+  const planId = searchParams.get("planId");
+
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [loadedPlan, setLoadedPlan] = useState<{ id: string; name: string } | null>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  const planName = loadedPlan?.name ?? "My Race Plan";
+
+  async function handleExport() {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      await exportNodeToPng(exportRef.current, planName.replace(/[^\w-]+/g, "_").toLowerCase() || "race-plan");
+      toast.success("Saved as PNG");
+    } catch {
+      toast.error("Couldn't export image");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  usePersistedDraft(
+    { config: state.config, segments: state.segments, waterEveryKm: state.waterEveryKm, gelEveryKm: state.gelEveryKm },
+    (draft) => {
+      if (planId) return; // an explicit ?planId= link always wins over the local draft
+      dispatch({ type: "LOAD_PLAN", config: draft.config, segments: draft.segments });
+      dispatch({ type: "SET_STATION_INTERVALS", waterEveryKm: draft.waterEveryKm, gelEveryKm: draft.gelEveryKm });
+    },
+  );
+
+  useEffect(() => {
+    if (!planId || !user) return;
+    getPlan(user.uid, planId).then((plan) => {
+      if (!plan) {
+        toast.error("Plan not found");
+        return;
+      }
+      const config = {
+        startTime: plan.startTime,
+        totalDistanceKm: plan.distanceKm,
+        defaultPace: plan.defaultPaceSeconds,
+      };
+      const segments = applySegmentOverrides(
+        buildSegments(plan.distanceKm, { waterEveryKm: plan.waterEveryKm, gelEveryKm: plan.gelEveryKm }),
+        plan.segmentOverrides,
+      );
+      dispatch({ type: "LOAD_PLAN", config, segments });
+      setLoadedPlan({ id: plan.id, name: plan.name });
+    });
+    // Only re-run when the target plan or the signed-in user changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, user]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-1 flex-col">
+      <AppHeader />
+
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-4">
+        {!user && <SignedOutBanner />}
+
+        <RaceSetupCard
+          startTime={state.config.startTime}
+          distanceKm={state.config.totalDistanceKm}
+          defaultPace={state.config.defaultPace}
+          waterEveryKm={state.waterEveryKm}
+          gelEveryKm={state.gelEveryKm}
+          onStartTimeChange={(startTime) => dispatch({ type: "SET_START_TIME", startTime })}
+          onDistanceChange={(km) => dispatch({ type: "SET_DISTANCE", km })}
+          onDefaultPaceChange={(pace) => dispatch({ type: "SET_DEFAULT_PACE", pace })}
+          onStationIntervalsChange={(waterEveryKm, gelEveryKm) =>
+            dispatch({ type: "SET_STATION_INTERVALS", waterEveryKm, gelEveryKm })
+          }
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <PacingTable
+          splits={splits}
+          onNudgePace={(index, deltaSeconds) => dispatch({ type: "NUDGE_SEGMENT_PACE", index, deltaSeconds })}
+          onResetPace={(index) => dispatch({ type: "RESET_SEGMENT", index })}
+          onToggleWater={(index) => dispatch({ type: "TOGGLE_WATER", index })}
+          onToggleGel={(index) => dispatch({ type: "TOGGLE_GEL", index })}
+        />
       </main>
+
+      <StickySummaryBar
+        summary={summary}
+        onSave={() => setSaveOpen(true)}
+        onExport={handleExport}
+        exporting={exporting}
+      />
+
+      {/* Off-screen printable sheet captured by the PNG exporter. */}
+      <div style={{ position: "fixed", left: -10000, top: 0, pointerEvents: "none" }} aria-hidden>
+        <PlanExportSheet ref={exportRef} planName={planName} config={state.config} splits={splits} summary={summary} />
+      </div>
+
+      <SavePlanDialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        saving={saving}
+        defaultName={loadedPlan?.name}
+        onSave={async (name) => {
+          if (!user) {
+            toast.error("Sign in to save your plan");
+            setSaveOpen(false);
+            return;
+          }
+          setSaving(true);
+          try {
+            if (loadedPlan) {
+              await updatePlan(user.uid, loadedPlan.id, name, state.config, state.segments, state.waterEveryKm, state.gelEveryKm);
+              setLoadedPlan({ id: loadedPlan.id, name });
+            } else {
+              const id = await savePlan(user.uid, name, state.config, state.segments, state.waterEveryKm, state.gelEveryKm);
+              setLoadedPlan({ id, name });
+            }
+            toast.success(`"${name}" saved`);
+            setSaveOpen(false);
+          } catch {
+            toast.error("Failed to save plan");
+          } finally {
+            setSaving(false);
+          }
+        }}
+      />
     </div>
+  );
+}
+
+export default function PlannerPage() {
+  return (
+    <Suspense>
+      <PlannerContent />
+    </Suspense>
   );
 }
