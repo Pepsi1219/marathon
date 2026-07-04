@@ -44,6 +44,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -53,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
         <Script id="no-flash-theme" strategy="beforeInteractive">
           {NO_FLASH_THEME_SCRIPT}
         </Script>
