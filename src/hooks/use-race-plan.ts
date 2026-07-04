@@ -116,7 +116,7 @@ export function useRacePlan(initial?: Partial<RacePlanState>) {
   const [state, dispatch] = useReducer(reducer, undefined, () => {
     const config = { ...DEFAULT_CONFIG, ...initial?.config };
     const waterEveryKm = initial?.waterEveryKm ?? 2;
-    const gelEveryKm = initial?.gelEveryKm ?? 7;
+    const gelEveryKm = initial?.gelEveryKm ?? 0;
     return {
       config,
       waterEveryKm,

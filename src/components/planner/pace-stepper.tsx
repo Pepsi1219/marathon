@@ -19,9 +19,9 @@ export function PaceStepper({ pace, isOverridden, onNudge, onReset }: PaceSteppe
         type="button"
         aria-label={`Decrease pace by ${PACE_STEP_SECONDS} seconds`}
         onClick={() => onNudge(-PACE_STEP_SECONDS)}
-        className="flex h-11 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-transform active:scale-90 active:bg-muted sm:w-11"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-transform active:scale-90 active:bg-muted sm:size-9"
       >
-        <Minus className="size-4" />
+        <Minus className="size-3.5" />
       </button>
 
       <span
@@ -37,9 +37,9 @@ export function PaceStepper({ pace, isOverridden, onNudge, onReset }: PaceSteppe
         type="button"
         aria-label={`Increase pace by ${PACE_STEP_SECONDS} seconds`}
         onClick={() => onNudge(PACE_STEP_SECONDS)}
-        className="flex h-11 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-transform active:scale-90 active:bg-muted sm:w-11"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-transform active:scale-90 active:bg-muted sm:size-9"
       >
-        <Plus className="size-4" />
+        <Plus className="size-3.5" />
       </button>
 
       {isOverridden && (

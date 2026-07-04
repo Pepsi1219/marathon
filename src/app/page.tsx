@@ -49,7 +49,7 @@ function PlannerContent() {
     (draft) => {
       if (planId) return; // an explicit ?planId= link always wins over the local draft
       dispatch({ type: "LOAD_PLAN", config: draft.config, segments: draft.segments });
-      dispatch({ type: "SET_STATION_INTERVALS", waterEveryKm: draft.waterEveryKm, gelEveryKm: draft.gelEveryKm });
+      dispatch({ type: "SET_STATION_INTERVALS", waterEveryKm: draft.waterEveryKm, gelEveryKm: 0 });
     },
   );
 
@@ -88,12 +88,11 @@ function PlannerContent() {
           distanceKm={state.config.totalDistanceKm}
           defaultPace={state.config.defaultPace}
           waterEveryKm={state.waterEveryKm}
-          gelEveryKm={state.gelEveryKm}
           onStartTimeChange={(startTime) => dispatch({ type: "SET_START_TIME", startTime })}
           onDistanceChange={(km) => dispatch({ type: "SET_DISTANCE", km })}
           onDefaultPaceChange={(pace) => dispatch({ type: "SET_DEFAULT_PACE", pace })}
-          onStationIntervalsChange={(waterEveryKm, gelEveryKm) =>
-            dispatch({ type: "SET_STATION_INTERVALS", waterEveryKm, gelEveryKm })
+          onWaterIntervalChange={(waterEveryKm) =>
+            dispatch({ type: "SET_STATION_INTERVALS", waterEveryKm, gelEveryKm: 0 })
           }
         />
 

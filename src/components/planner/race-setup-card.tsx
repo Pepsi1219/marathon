@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, MapPin, Gauge, Droplet, Zap, ChevronDown } from "lucide-react";
+import { Clock, MapPin, Gauge, Droplet, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,11 +24,10 @@ interface RaceSetupCardProps {
   distanceKm: number;
   defaultPace: number;
   waterEveryKm: number;
-  gelEveryKm: number;
   onStartTimeChange: (value: string) => void;
   onDistanceChange: (km: number) => void;
   onDefaultPaceChange: (pace: number) => void;
-  onStationIntervalsChange: (waterEveryKm: number, gelEveryKm: number) => void;
+  onWaterIntervalChange: (km: number) => void;
 }
 
 const CUSTOM_VALUE = "custom";
@@ -87,7 +86,7 @@ function DistanceField({
             onDistanceChange(Number(val));
           }}
         >
-          <SelectTrigger id="distance" className="w-full text-base font-medium data-[size=default]:h-11">
+          <SelectTrigger id="distance" className="h-11 w-full text-base font-medium data-[size=default]:h-11">
             <SelectValue placeholder="Distance">
               {(value) => {
                 const preset = STANDARD_DISTANCES.find((d) => String(d.km) === value);
@@ -112,7 +111,7 @@ function PaceField({ defaultPace, onDefaultPaceChange }: { defaultPace: number; 
     <div className="flex flex-col gap-2.5">
       <FieldLabel icon={Gauge} htmlFor="default-pace">Pace (min/km)</FieldLabel>
       <Select value={String(defaultPace)} onValueChange={(val) => onDefaultPaceChange(Number(val))}>
-        <SelectTrigger id="default-pace" className="w-full text-base font-medium tabular-nums data-[size=default]:h-11">
+        <SelectTrigger id="default-pace" className="h-11 w-full text-base font-medium tabular-nums data-[size=default]:h-11">
           <SelectValue placeholder="Pace">{(value) => (value ? formatPace(Number(value)) : "Pace")}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -125,30 +124,15 @@ function PaceField({ defaultPace, onDefaultPaceChange }: { defaultPace: number; 
   );
 }
 
-function WaterField({ waterEveryKm, gelEveryKm, onStationIntervalsChange }: {
-  waterEveryKm: number; gelEveryKm: number; onStationIntervalsChange: (w: number, g: number) => void;
+function WaterField({ waterEveryKm, onWaterIntervalChange }: {
+  waterEveryKm: number; onWaterIntervalChange: (km: number) => void;
 }) {
   return (
     <div className="flex flex-col gap-2.5">
       <FieldLabel icon={Droplet} htmlFor="water-every">Water</FieldLabel>
       <Input
         id="water-every" type="number" min={0} step={0.5} value={waterEveryKm}
-        onChange={(e) => onStationIntervalsChange(Number(e.target.value) || 0, gelEveryKm)}
-        className="h-11 text-base font-medium tabular-nums"
-      />
-    </div>
-  );
-}
-
-function GelField({ waterEveryKm, gelEveryKm, onStationIntervalsChange }: {
-  waterEveryKm: number; gelEveryKm: number; onStationIntervalsChange: (w: number, g: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2.5">
-      <FieldLabel icon={Zap} htmlFor="gel-every">Gel</FieldLabel>
-      <Input
-        id="gel-every" type="number" min={0} step={0.5} value={gelEveryKm}
-        onChange={(e) => onStationIntervalsChange(waterEveryKm, Number(e.target.value) || 0)}
+        onChange={(e) => onWaterIntervalChange(Number(e.target.value) || 0)}
         className="h-11 text-base font-medium tabular-nums"
       />
     </div>
@@ -156,8 +140,8 @@ function GelField({ waterEveryKm, gelEveryKm, onStationIntervalsChange }: {
 }
 
 export function RaceSetupCard({
-  startTime, distanceKm, defaultPace, waterEveryKm, gelEveryKm,
-  onStartTimeChange, onDistanceChange, onDefaultPaceChange, onStationIntervalsChange,
+  startTime, distanceKm, defaultPace, waterEveryKm,
+  onStartTimeChange, onDistanceChange, onDefaultPaceChange, onWaterIntervalChange,
 }: RaceSetupCardProps) {
   const [customKm, setCustomKm] = useState(String(distanceKm));
   const [customMode, setCustomMode] = useState(() => !STANDARD_DISTANCES.some((d) => d.km === distanceKm));
@@ -174,8 +158,7 @@ export function RaceSetupCard({
 
   const distanceProps = { customMode, setCustomMode, selectValue, customKm, setCustomKm, onDistanceChange };
   const paceProps = { defaultPace, onDefaultPaceChange };
-  const waterProps = { waterEveryKm, gelEveryKm, onStationIntervalsChange };
-  const gelProps = { waterEveryKm, gelEveryKm, onStationIntervalsChange };
+  const waterProps = { waterEveryKm, onWaterIntervalChange };
 
   return (
     <Card className="gap-5 border-border/60 py-5 shadow-sm">
@@ -185,22 +168,21 @@ export function RaceSetupCard({
 
       {/* Mobile: 2 rows */}
       <CardContent className="flex flex-col gap-4 lg:hidden">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2.5">
             <FieldLabel icon={Clock} htmlFor="start-time">Start Time</FieldLabel>
             <Input id="start-time" type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} className="h-11 text-base font-medium tabular-nums" />
           </div>
           <DistanceField {...distanceProps} />
         </div>
-        <div className="grid grid-cols-[1fr_4.5rem_4.5rem] gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <PaceField {...paceProps} />
           <WaterField {...waterProps} />
-          <GelField {...gelProps} />
         </div>
       </CardContent>
 
       {/* Desktop: single row */}
-      <CardContent className="hidden lg:grid lg:grid-cols-[1fr_1fr_1fr_5rem_5rem] lg:gap-4">
+      <CardContent className="hidden lg:grid lg:grid-cols-4 lg:gap-4">
         <div className="flex flex-col gap-2.5">
           <FieldLabel icon={Clock} htmlFor="start-time-lg">Start Time</FieldLabel>
           <Input id="start-time-lg" type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} className="h-11 text-base font-medium tabular-nums" />
@@ -208,7 +190,6 @@ export function RaceSetupCard({
         <DistanceField {...distanceProps} />
         <PaceField {...paceProps} />
         <WaterField {...waterProps} />
-        <GelField {...gelProps} />
       </CardContent>
     </Card>
   );
