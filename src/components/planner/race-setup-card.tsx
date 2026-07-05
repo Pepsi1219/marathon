@@ -94,7 +94,7 @@ function DistanceField({
               }}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent alignItemWithTrigger={false}>
             {STANDARD_DISTANCES.map((d) => (
               <SelectItem key={d.km} value={String(d.km)}>{d.label}</SelectItem>
             ))}
@@ -114,7 +114,7 @@ function PaceField({ defaultPace, onDefaultPaceChange }: { defaultPace: number; 
         <SelectTrigger id="default-pace" className="h-11 w-full text-base font-medium tabular-nums data-[size=default]:h-11">
           <SelectValue placeholder="Pace">{(value) => (value ? formatPace(Number(value)) : "Pace")}</SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent alignItemWithTrigger={false} className="max-h-60">
           {PACE_OPTIONS.map((p) => (
             <SelectItem key={p} value={String(p)}>{formatPace(p)}</SelectItem>
           ))}
