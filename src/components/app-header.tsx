@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Timer, ListChecks } from "lucide-react";
+import { Timer, ListChecks, TrendingUp } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthButton } from "@/components/auth-button";
@@ -22,6 +22,10 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <Link href="/training" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5")}>
+            <TrendingUp className="size-4" />
+            <span className="hidden sm:inline">Training</span>
+          </Link>
           <Link href="/plans" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5")}>
             <ListChecks className="size-4" />
             <span className="hidden sm:inline">My Plans</span>
