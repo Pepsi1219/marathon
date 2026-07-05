@@ -171,7 +171,7 @@ export function RaceSetupCard({
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2.5">
             <FieldLabel icon={Clock} htmlFor="start-time">Start Time</FieldLabel>
-            <Input id="start-time" type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} className="h-11 text-base font-medium tabular-nums" />
+            <Input id="start-time" type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} className="h-11 appearance-none text-base font-medium tabular-nums [&::-webkit-date-and-time-value]:leading-none [&::-webkit-datetime-edit]:p-0" />
           </div>
           <DistanceField {...distanceProps} />
         </div>
@@ -185,7 +185,7 @@ export function RaceSetupCard({
       <CardContent className="hidden lg:grid lg:grid-cols-4 lg:gap-4">
         <div className="flex flex-col gap-2.5">
           <FieldLabel icon={Clock} htmlFor="start-time-lg">Start Time</FieldLabel>
-          <Input id="start-time-lg" type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} className="h-11 text-base font-medium tabular-nums" />
+          <Input id="start-time-lg" type="time" value={startTime} onChange={(e) => onStartTimeChange(e.target.value)} className="h-11 appearance-none text-base font-medium tabular-nums [&::-webkit-date-and-time-value]:leading-none [&::-webkit-datetime-edit]:p-0" />
         </div>
         <DistanceField {...distanceProps} />
         <PaceField {...paceProps} />
