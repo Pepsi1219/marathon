@@ -18,6 +18,35 @@ service cloud.firestore {
                     && request.resource.data.segmentOverrides.size() <= 300;
     }
 
+    match /users/{uid}/raceGoals/{id} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.name is string
+                    && request.resource.data.date is string
+                    && request.resource.data.distanceKm is number
+                    && request.resource.data.distanceKm > 0
+                    && request.resource.data.baseWeeklyKm is number
+                    && request.resource.data.baseWeeklyKm > 0;
+    }
+
+    match /users/{uid}/activities/{id} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.date is string
+                    && request.resource.data.distanceKm is number
+                    && request.resource.data.distanceKm > 0;
+    }
+
+    match /users/{uid}/weeklyTargets/{weekKey} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.plannedKm is number
+                    && request.resource.data.plannedKm > 0;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

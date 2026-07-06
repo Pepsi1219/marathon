@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
   getDocs,
   query,
@@ -18,6 +19,7 @@ export interface RaceGoalDoc {
   date: string;          // YYYY-MM-DD
   distanceKm: number;
   baseWeeklyKm: number;
+  finishTime?: number | null;  // total seconds, user-entered after race
   createdAt: Timestamp | null;
 }
 
@@ -34,6 +36,14 @@ export async function addRaceGoal(
   const ref = doc(racesCol(uid));
   await setDoc(ref, { ...data, createdAt: serverTimestamp() });
   return { id: ref.id, ...data, createdAt: null };
+}
+
+export async function updateRaceGoal(
+  uid: string,
+  id: string,
+  patch: { finishTime: number | null },
+): Promise<void> {
+  await updateDoc(doc(racesCol(uid), id), patch);
 }
 
 export async function deleteRaceGoal(uid: string, id: string) {

@@ -27,12 +27,12 @@ Firebase Auth (Google via `signInWithPopup`), Cloud Firestore, Vitest.
   - `users/{uid}/weeklyTargets/{weekKey}` — plannedKm (sparse overrides only)
 - **Hook** (`src/hooks/use-training.ts`): loads all 3 collections in parallel, memoizes timeline + actualByWeek, exposes optimistic-update actions (addRace, logActivity, overrideWeekTarget, …).
 - **Components** (`src/components/training/`):
-  - `AddRaceDialog` — controlled dialog, distance presets + custom input
+  - `AddRaceDialog` — controlled dialog, inline calendar picker (no external package), distance presets + custom input; `defaultBaseWeeklyKm` pre-fills from first race so user doesn't re-enter it.
   - `WeekCard` — current week progress bar + inline target override/reset
-  - `RaceCards` — per-race countdown + cumulative km progress
-  - `PlanChart` — CSS bar chart, planned (phase-colored) vs actual
-  - `TimelineStrip` — horizontal scrollable week chips, auto-centered on current week
-  - `ActivityLog` — quick log form (date, km, duration, note) + history list
+  - `RaceCards` — splits races into upcoming + past. Upcoming: horizontal card-deck (`UpcomingStack`) with CSS Grid column transition; active card shows full content, non-active cards are 48 px `RaceStrip` tabs (Flag icon + days vertical). Past races: muted cards with `FinishTimeEditor` (H/MM/SS inline) and training-km summary. "Show all / Stack view" toggle in header.
+  - `PlanChart` — CSS bar chart, planned (phase-colored) vs actual. Scrollbar hidden (`[scrollbar-width:none]`), gradient fade edges. Shows all weeks from 2 weeks before current to race day; km label above each planned bar.
+  - `ActivityLog` — quick log form (date, km, pace M:SS /km, note). Duration stored as `paceSec × distanceKm`. History in fixed-height scrollable container (`max-h-72`), shows activity count.
+  - ~~`TimelineStrip`~~ — deleted; redundant with PlanChart.
 
 ## Design language
 

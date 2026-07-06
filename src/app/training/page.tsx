@@ -14,7 +14,6 @@ import { WeekCard } from "@/components/training/week-card";
 import { RaceCards } from "@/components/training/race-cards";
 import { PlanChart } from "@/components/training/plan-chart";
 import { ActivityLog } from "@/components/training/activity-log";
-import { TimelineStrip } from "@/components/training/timeline-strip";
 
 export default function TrainingPage() {
   const { user, loading: authLoading } = useAuthUser();
@@ -35,6 +34,7 @@ export default function TrainingPage() {
     actualByWeek,
     today,
     addRace,
+    updateRace,
     removeRace,
     logActivity,
     removeActivity,
@@ -49,6 +49,14 @@ export default function TrainingPage() {
     } catch {
       toast.error("Failed to add race.");
       throw new Error("failed");
+    }
+  }
+
+  async function handleUpdateRace(id: string, patch: { finishTime: number | null }) {
+    try {
+      await updateRace(id, patch);
+    } catch {
+      toast.error("Failed to save.");
     }
   }
 
@@ -119,27 +127,18 @@ export default function TrainingPage() {
             {/* Upcoming races */}
             <RaceCards
               races={races}
+              activities={activities}
               timeline={timeline}
               actualByWeek={actualByWeek}
               today={today}
               onRemove={handleRemoveRace}
+              onUpdate={handleUpdateRace}
             />
 
             {/* Plan chart */}
             {timeline.length > 0 && (
               <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
                 <PlanChart
-                  timeline={timeline}
-                  actualByWeek={actualByWeek}
-                  currentWeekKey={currentWeekKey}
-                />
-              </div>
-            )}
-
-            {/* Timeline strip */}
-            {timeline.length > 0 && (
-              <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-                <TimelineStrip
                   timeline={timeline}
                   actualByWeek={actualByWeek}
                   currentWeekKey={currentWeekKey}
@@ -162,6 +161,7 @@ export default function TrainingPage() {
       <AddRaceDialog
         open={addRaceOpen}
         onOpenChange={setAddRaceOpen}
+        defaultBaseWeeklyKm={races[0]?.baseWeeklyKm}
         onAdd={handleAddRace}
       />
     </div>

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Clock } from "lucide-react";
+import { Plus, Trash2, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDuration, parseDuration, formatPaceFromSec } from "@/lib/training-plan";
+import { formatDuration, formatPaceFromSec } from "@/lib/training-plan";
 import type { ActivityRecord } from "@/lib/firebase/training";
 
 interface ActivityLogProps {
@@ -17,7 +17,8 @@ interface ActivityLogProps {
 interface LogForm {
   date: string;
   distanceKm: string;
-  duration: string;
+  paceM: string;
+  paceS: string;
   note: string;
 }
 
@@ -25,13 +26,18 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-const INITIAL: LogForm = { date: todayStr(), distanceKm: "", duration: "", note: "" };
+const INITIAL: LogForm = {
+  date: todayStr(),
+  distanceKm: "",
+  paceM: "",
+  paceS: "",
+  note: "",
+};
 
 export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
   const [form, setForm] = useState<LogForm>(INITIAL);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
 
   function set(field: keyof LogForm, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -44,11 +50,11 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
     if (!distanceKm || distanceKm <= 0) { setError("Enter a valid distance."); return; }
     if (!form.date) { setError("Date is required."); return; }
 
-    let durationSec: number | null = null;
-    if (form.duration.trim()) {
-      durationSec = parseDuration(form.duration.trim());
-      if (durationSec === null) { setError("Duration format: h:mm:ss or m:ss"); return; }
-    }
+    const paceM = parseInt(form.paceM) || 0;
+    const paceS = parseInt(form.paceS) || 0;
+    if (paceS > 59) { setError("Seconds must be 0–59."); return; }
+    const paceSec = paceM * 60 + paceS;
+    const durationSec = paceSec > 0 ? Math.round(paceSec * distanceKm) : null;
 
     setSaving(true);
     try {
@@ -65,8 +71,6 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
       setSaving(false);
     }
   }
-
-  const visible = showAll ? activities : activities.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-4">
@@ -104,18 +108,41 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="log-duration" className="text-xs">
-              <Clock className="mr-1 inline size-3" />
-              Duration
+            <Label className="text-xs">
+              <Gauge className="mr-1 inline size-3" />
+              Pace <span className="font-normal text-muted-foreground">(opt.)</span>
             </Label>
-            <Input
-              id="log-duration"
-              placeholder="h:mm:ss"
-              value={form.duration}
-              onChange={(e) => set("duration", e.target.value)}
-              className="h-9 tabular-nums text-sm"
-            />
+            <div className="flex items-center gap-1">
+              <div className="flex flex-col items-center gap-0.5">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  placeholder="5"
+                  value={form.paceM}
+                  onChange={(e) => set("paceM", e.target.value)}
+                  className="h-9 w-16 text-center tabular-nums text-sm"
+                />
+                <span className="text-[10px] text-muted-foreground">min</span>
+              </div>
+              <span className="mb-4 text-muted-foreground">:</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={59}
+                  placeholder="30"
+                  value={form.paceS}
+                  onChange={(e) => set("paceS", e.target.value)}
+                  className="h-9 w-16 text-center tabular-nums text-sm"
+                />
+                <span className="text-[10px] text-muted-foreground">sec</span>
+              </div>
+              <span className="mb-4 text-[10px] text-muted-foreground">/km</span>
+            </div>
           </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="log-note" className="text-xs">Note (optional)</Label>
             <Input
@@ -136,51 +163,46 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
         </Button>
       </form>
 
-      {/* Recent activities */}
+      {/* Activity history */}
       {activities.length > 0 && (
         <div className="flex flex-col gap-1">
-          {visible.map((a) => {
-            const pace = a.durationSec && a.distanceKm > 0
-              ? formatPaceFromSec(a.durationSec / a.distanceKm)
-              : null;
-            return (
-              <div
-                key={a.id}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted/50"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-medium tabular-nums">{a.distanceKm.toFixed(1)} km</span>
-                    {a.durationSec && (
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {formatDuration(a.durationSec)}
-                        {pace && <> · {pace}/km</>}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{a.date}</span>
-                    {a.note && <span className="truncate">{a.note}</span>}
-                  </div>
-                </div>
-                <button
-                  onClick={() => onRemove(a.id)}
-                  aria-label="Remove activity"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          <p className="text-xs text-muted-foreground">{activities.length} activit{activities.length === 1 ? "y" : "ies"}</p>
+          <div className="max-h-72 overflow-y-auto rounded-xl border border-border/60 [-ms-overflow-style:none] [scrollbar-width:thin]">
+            {activities.map((a) => {
+              const pace = a.durationSec && a.distanceKm > 0
+                ? formatPaceFromSec(a.durationSec / a.distanceKm)
+                : null;
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 border-b border-border/40 px-3 py-2 last:border-0 hover:bg-muted/50"
                 >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </div>
-            );
-          })}
-          {activities.length > 5 && (
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="py-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              {showAll ? "Show less" : `Show all ${activities.length} activities`}
-            </button>
-          )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-medium tabular-nums">{a.distanceKm.toFixed(1)} km</span>
+                      {a.durationSec && (
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {formatDuration(a.durationSec)}
+                          {pace && <> · {pace}/km</>}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{a.date}</span>
+                      {a.note && <span className="truncate">{a.note}</span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onRemove(a.id)}
+                    aria-label="Remove activity"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

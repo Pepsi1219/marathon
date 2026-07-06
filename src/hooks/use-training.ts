@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthUser } from "@/lib/firebase/auth";
 import {
-  addRaceGoal, deleteRaceGoal, listRaceGoals, type RaceGoalRecord,
+  addRaceGoal, updateRaceGoal, deleteRaceGoal, listRaceGoals, type RaceGoalRecord,
   addActivity, deleteActivity, listActivities, type ActivityRecord,
   setWeeklyTarget, deleteWeeklyTarget, listWeeklyTargets, type WeeklyTargetRecord,
 } from "@/lib/firebase/training";
@@ -103,6 +103,15 @@ export function useTraining() {
     }));
   }, [user]);
 
+  const updateRace = useCallback(async (id: string, patch: { finishTime: number | null }) => {
+    if (!user) return;
+    await updateRaceGoal(user.uid, id, patch);
+    setState((s) => ({
+      ...s,
+      races: s.races.map((r) => r.id === id ? { ...r, ...patch } : r),
+    }));
+  }, [user]);
+
   const removeRace = useCallback(async (id: string) => {
     if (!user) return;
     await deleteRaceGoal(user.uid, id);
@@ -149,6 +158,7 @@ export function useTraining() {
     actualByWeek,
     today,
     addRace,
+    updateRace,
     removeRace,
     logActivity,
     removeActivity,
