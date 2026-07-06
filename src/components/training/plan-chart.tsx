@@ -29,18 +29,18 @@ export function PlanChart({ timeline, actualByWeek, currentWeekKey }: PlanChartP
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-card to-transparent" />
 
         <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex min-w-max items-end gap-1 px-2 pb-6" style={{ height: 132 }}>
+        <div className="flex min-w-max items-end gap-1 px-2 pb-6" style={{ height: 164 }}>
           {weeks.map((week) => {
             const actual = actualByWeek.get(week.weekKey) ?? 0;
-            const plannedH = Math.round((week.plannedKm / maxKm) * 90);
-            const actualH = Math.round((actual / maxKm) * 90);
+            const plannedH = Math.round((week.plannedKm / maxKm) * 88);
+            const actualH = Math.round((actual / maxKm) * 88);
             const isCurrent = week.weekKey === currentWeekKey;
             const phase = PHASE_META[week.phase];
 
             return (
               <div key={week.weekKey} className="flex flex-col items-center gap-0.5" style={{ width: 36 }}>
                 {/* Bars */}
-                <div className="relative flex w-full items-end justify-center gap-0.5" style={{ height: 102 }}>
+                <div className="relative flex w-full items-end justify-center gap-0.5" style={{ height: 120 }}>
                   {/* Planned bar with km label at top */}
                   <div className="relative flex flex-col items-center justify-end" style={{ height: "100%" }}>
                     <span
