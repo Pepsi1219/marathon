@@ -9,11 +9,30 @@ Firebase Auth (Google via `signInWithPopup`), Cloud Firestore, Vitest.
 ## Key architecture
 
 - **Pace engine** (`src/lib/pace-engine.ts`): pure TS, paces as integer seconds, O(n) split recalculation.
-- **State**: `useReducer` in `src/hooks/use-race-plan.ts`, `useMemo` for computed splits.
+- **Planner state**: `useReducer` in `src/hooks/use-race-plan.ts`, `useMemo` for computed splits.
 - **Firestore**: subcollection `users/{uid}/racePlans/{planId}`. Segment overrides stored sparsely via `src/lib/firebase/segment-overrides.ts`.
 - **PNG export** (`src/lib/export-png.ts`): `html-to-image` → Web Share API on mobile, `<a download>` on desktop.
 - **Theme**: custom ThemeProvider (`src/components/theme-provider.tsx`), NOT next-themes.
 - **PWA**: `public/sw.js` (network-first navigation), manifest via `src/app/manifest.ts`, PNG icons for all platforms.
+
+### Training Tracker (`/training`)
+
+- **Plan engine** (`src/lib/training-plan.ts`): pure TS, zero React/Firebase deps. ISO 8601 week helpers, multi-race progressive overload generator (build → taper → race → recovery), activity aggregation, formatting utils.
+  - Algorithm: +10%/week build, down week (×0.75) every 4th, 2-week taper (65%→45% of peak), race week, 2 recovery weeks (50%→70% of base) before next segment.
+  - `generateTimeline(races, today, weeklyTargetOverrides)` → `WeekPlan[]`
+  - `getActualByWeek(activities)` → `Map<weekKey, km>`
+- **Firestore collections** (`src/lib/firebase/training.ts`):
+  - `users/{uid}/raceGoals/{id}` — name, date, distanceKm, baseWeeklyKm
+  - `users/{uid}/activities/{id}` — date, distanceKm, durationSec, note
+  - `users/{uid}/weeklyTargets/{weekKey}` — plannedKm (sparse overrides only)
+- **Hook** (`src/hooks/use-training.ts`): loads all 3 collections in parallel, memoizes timeline + actualByWeek, exposes optimistic-update actions (addRace, logActivity, overrideWeekTarget, …).
+- **Components** (`src/components/training/`):
+  - `AddRaceDialog` — controlled dialog, distance presets + custom input
+  - `WeekCard` — current week progress bar + inline target override/reset
+  - `RaceCards` — per-race countdown + cumulative km progress
+  - `PlanChart` — CSS bar chart, planned (phase-colored) vs actual
+  - `TimelineStrip` — horizontal scrollable week chips, auto-centered on current week
+  - `ActivityLog` — quick log form (date, km, duration, note) + history list
 
 ## Design language
 
