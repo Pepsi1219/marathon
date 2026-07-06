@@ -8,7 +8,7 @@ Firebase Auth (Google via `signInWithPopup`), Cloud Firestore, Vitest.
 
 ## Key architecture
 
-- **Pace engine** (`src/lib/pace-engine.ts`): pure TS, paces as integer seconds, O(n) split recalculation.
+- **Pace engine** (`src/lib/pace-engine.ts`): pure TS, paces as integer seconds, O(n) split recalculation. `STANDARD_DISTANCES` = 5K, 10K, Half Marathon, Marathon, Ultramarathon 100K.
 - **Planner state**: `useReducer` in `src/hooks/use-race-plan.ts`, `useMemo` for computed splits.
 - **Firestore**: subcollection `users/{uid}/racePlans/{planId}`. Segment overrides stored sparsely via `src/lib/firebase/segment-overrides.ts`.
 - **PNG export** (`src/lib/export-png.ts`): `html-to-image` → Web Share API on mobile, `<a download>` on desktop.
@@ -27,7 +27,7 @@ Firebase Auth (Google via `signInWithPopup`), Cloud Firestore, Vitest.
   - `users/{uid}/weeklyTargets/{weekKey}` — plannedKm (sparse overrides only)
 - **Hook** (`src/hooks/use-training.ts`): loads all 3 collections in parallel, memoizes timeline + actualByWeek, exposes optimistic-update actions (addRace, logActivity, overrideWeekTarget, …).
 - **Components** (`src/components/training/`):
-  - `AddRaceDialog` — controlled dialog, inline calendar picker (no external package), distance presets + custom input; `defaultBaseWeeklyKm` pre-fills from first race so user doesn't re-enter it.
+  - `AddRaceDialog` — controlled dialog, inline calendar picker (no external package), distance presets (5K, 10K, Half, Marathon, Ultramarathon 100K) + custom input; `defaultBaseWeeklyKm` pre-fills from first race so user doesn't re-enter it.
   - `WeekCard` — current week progress bar + inline target override/reset
   - `RaceCards` — splits races into upcoming + past. Upcoming: horizontal card-deck (`UpcomingStack`) with CSS Grid column transition; active card shows full content, non-active cards are 48 px `RaceStrip` tabs (Flag icon + days vertical). Past races: muted cards with `FinishTimeEditor` (H/MM/SS inline) and training-km summary. "Show all / Stack view" toggle in header.
   - `PlanChart` — CSS bar chart, planned (phase-colored) vs actual. Scrollbar hidden (`[scrollbar-width:none]`), gradient fade edges. Shows all weeks from 2 weeks before current to race day; km label above each planned bar.
@@ -42,7 +42,7 @@ The app uses a clean, minimal modern SaaS aesthetic — sometimes called "Vercel
 - **Color palette**: Custom OKLCH-based palette with an orange-red primary accent (`oklch(0.63 0.21 34)` light / `oklch(0.7 0.19 34)` dark). Defined in `src/app/globals.css`.
 - **Radius**: Generous rounded corners (`--radius: 0.9rem`) for cards, buttons, inputs.
 - **Shadows**: Subtle (`shadow-sm`) — depth via background color differences, not heavy shadows.
-- **Icons**: [Lucide React](https://lucide.dev) — consistent stroke-based icons throughout.
+- **Icons**: [Lucide React](https://lucide.dev) — consistent stroke-based icons throughout. App logo is an inline SVG running figure (not a Lucide icon) in `app-header.tsx`; PWA icons (`public/icon.svg`, `public/icon-maskable.svg`) use the same running figure on `#e8552d` background.
 - **Dark mode**: Custom ThemeProvider (`src/components/theme-provider.tsx`), no-flash script via `next/script strategy="beforeInteractive"`.
 
 ## Tech constraints

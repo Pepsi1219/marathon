@@ -151,6 +151,7 @@ const PRESET_DISTANCES = [
   { label: "10K", km: 10 },
   { label: "Half Marathon (21.1 km)", km: 21.1 },
   { label: "Marathon (42.2 km)", km: 42.2 },
+  { label: "Ultramarathon (100 km)", km: 100 },
 ];
 
 interface AddRaceDialogProps {

@@ -36,6 +36,7 @@ export const STANDARD_DISTANCES = [
   { label: "10K", km: 10 },
   { label: "Half Marathon", km: 21.0975 },
   { label: "Marathon", km: 42.195 },
+  { label: "Ultramarathon 100K", km: 100 },
 ] as const;
 
 /** Builds segments for a race distance: full km segments plus one fractional segment if needed. */

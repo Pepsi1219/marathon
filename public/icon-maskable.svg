@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#e8552d"/>
-  <circle cx="256" cy="266" r="104" fill="none" stroke="#ffffff" stroke-width="18"/>
-  <line x1="256" y1="266" x2="256" y2="198" stroke="#ffffff" stroke-width="15" stroke-linecap="round"/>
-  <line x1="256" y1="266" x2="302" y2="285" stroke="#ffffff" stroke-width="15" stroke-linecap="round"/>
-  <rect x="228" y="140" width="56" height="32" rx="10" fill="#ffffff"/>
-  <rect x="241" y="116" width="30" height="28" rx="8" fill="#ffffff"/>
+  <circle cx="316" cy="132" r="40" fill="#ffffff"/>
+  <line x1="302" y1="172" x2="270" y2="304" stroke="#ffffff" stroke-width="32" stroke-linecap="round"/>
+  <line x1="284" y1="224" x2="356" y2="178" stroke="#ffffff" stroke-width="27" stroke-linecap="round"/>
+  <line x1="284" y1="224" x2="212" y2="268" stroke="#ffffff" stroke-width="27" stroke-linecap="round"/>
+  <polyline points="270,304 340,402 394,386" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="270,304 198,396 162,380" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
