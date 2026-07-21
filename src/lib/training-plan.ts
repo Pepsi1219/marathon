@@ -33,6 +33,16 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
+/**
+ * Formats a Date as "YYYY-MM-DD" using its *local* calendar fields.
+ * Always prefer this over `date.toISOString().slice(0, 10)` — that converts to UTC first,
+ * which silently shifts the calendar date by a day for any timezone ahead of UTC (e.g. UTC+7)
+ * during the hours where local time hasn't caught up to UTC midnight yet.
+ */
+export function formatLocalDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
@@ -315,6 +325,20 @@ export function daysBetween(a: Date, b: Date): number {
 /** "Nov 18" style label for a date. */
 export function formatShortDate(date: Date): string {
   return date.toLocaleDateString("en", { month: "short", day: "numeric" });
+}
+
+/**
+ * Human-readable race distance label, e.g. for race cards. Single source of truth so
+ * every caller agrees on the boundaries (in particular: ultramarathons, >=75 km, must not
+ * fall through to "Marathon").
+ */
+export function distanceLabel(km: number): string {
+  if (km >= 75) return "Ultramarathon";
+  if (km >= 40) return "Marathon";
+  if (km >= 19) return "Half Marathon";
+  if (km >= 8) return "10K";
+  if (km >= 4) return "5K";
+  return `${km} km`;
 }
 
 /** Phase display metadata (label + Tailwind colour classes). */

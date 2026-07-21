@@ -5,7 +5,7 @@ import { Trash2, Flag, CalendarDays, Plus, Pencil, Check, X, Maximize2, Minimize
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { daysBetween, formatShortDate, formatDuration, type WeekPlan } from "@/lib/training-plan";
+import { daysBetween, formatShortDate, formatDuration, parseLocalDate, distanceLabel, type WeekPlan } from "@/lib/training-plan";
 import type { RaceGoalRecord, ActivityRecord } from "@/lib/firebase/training";
 
 interface RaceCardsProps {
@@ -16,15 +16,6 @@ interface RaceCardsProps {
   today: Date;
   onRemove: (id: string) => Promise<void>;
   onUpdate: (id: string, patch: { finishTime: number | null }) => Promise<void>;
-}
-
-function parseLocal(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function distLabel(km: number): string {
-  return km >= 42 ? "Marathon" : km >= 21 ? "Half Marathon" : km >= 10 ? "10K" : `${km} km`;
 }
 
 function trainingKmForRace(race: RaceGoalRecord, allRaces: RaceGoalRecord[], activities: ActivityRecord[]): number {
@@ -144,7 +135,7 @@ interface UpcomingCardProps {
 }
 
 function UpcomingCard({ race, timeline, actualByWeek, today, onRemove }: UpcomingCardProps) {
-  const raceDate = parseLocal(race.date);
+  const raceDate = parseLocalDate(race.date);
   const daysLeft = daysBetween(today, raceDate);
   const raceWeeks = timeline.filter((w) => w.targetRaceId === race.id);
   const totalPlanned = raceWeeks.reduce((s, w) => s + w.plannedKm, 0);
@@ -166,7 +157,7 @@ function UpcomingCard({ race, timeline, actualByWeek, today, onRemove }: Upcomin
                   <CalendarDays className="size-3" />
                   {formatShortDate(raceDate)}
                 </span>
-                <span>{distLabel(race.distanceKm)}</span>
+                <span>{distanceLabel(race.distanceKm)}</span>
               </div>
             </div>
           </div>
@@ -212,7 +203,7 @@ function RaceStrip({ race, today, onClick }: {
   today: Date;
   onClick: () => void;
 }) {
-  const daysLeft = daysBetween(today, parseLocal(race.date));
+  const daysLeft = daysBetween(today, parseLocalDate(race.date));
   return (
     <button
       onClick={onClick}
@@ -328,9 +319,9 @@ function UpcomingStack({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function RaceCards({ races, activities, timeline, actualByWeek, today, onRemove, onUpdate }: RaceCardsProps) {
-  const upcoming = races.filter((r) => parseLocal(r.date) >= today);
+  const upcoming = races.filter((r) => parseLocalDate(r.date) >= today);
   const past = races
-    .filter((r) => parseLocal(r.date) < today)
+    .filter((r) => parseLocalDate(r.date) < today)
     .sort((a, b) => b.date.localeCompare(a.date));
 
   if (upcoming.length === 0 && past.length === 0) return null;
@@ -351,7 +342,7 @@ export function RaceCards({ races, activities, timeline, actualByWeek, today, on
         <>
           <p className="text-xs font-medium text-muted-foreground">Past Races</p>
           {past.map((race) => {
-            const raceDate = parseLocal(race.date);
+            const raceDate = parseLocalDate(race.date);
             const km = trainingKmForRace(race, races, activities);
 
             return (
@@ -370,7 +361,7 @@ export function RaceCards({ races, activities, timeline, actualByWeek, today, on
                             <CalendarDays className="size-3" />
                             {formatShortDate(raceDate)}
                           </span>
-                          <span>{distLabel(race.distanceKm)}</span>
+                          <span>{distanceLabel(race.distanceKm)}</span>
                         </div>
                       </div>
                     </div>

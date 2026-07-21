@@ -1,11 +1,6 @@
 import { Trophy } from "lucide-react";
-import { formatDuration, formatPaceFromSec, formatShortDate } from "@/lib/training-plan";
+import { formatDuration, formatPaceFromSec, formatShortDate, parseLocalDate } from "@/lib/training-plan";
 import type { PersonalRecord } from "@/lib/dashboard-stats";
-
-function parseLocal(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 interface PersonalRecordsProps {
   records: PersonalRecord[];
@@ -36,7 +31,7 @@ export function PersonalRecords({ records }: PersonalRecordsProps) {
               <p className="text-xs font-medium text-muted-foreground">{r.category}</p>
               <p className="font-mono text-lg font-bold tabular-nums leading-tight">{formatDuration(r.finishTimeSec)}</p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {formatPaceFromSec(r.paceSecPerKm)}/km · {r.raceName} · {formatShortDate(parseLocal(r.date))}
+                {formatPaceFromSec(r.paceSecPerKm)}/km · {r.raceName} · {formatShortDate(parseLocalDate(r.date))}
               </p>
             </div>
           </div>

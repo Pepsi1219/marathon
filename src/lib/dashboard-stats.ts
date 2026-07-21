@@ -4,6 +4,8 @@ import {
   getISOWeekKey,
   getWeekStart,
   parseLocalDate,
+  formatLocalDate,
+  distanceLabel,
   addDays,
   daysBetween,
   getActualByWeek,
@@ -148,10 +150,6 @@ export interface HeatmapDay {
   isToday: boolean;
 }
 
-function toDateStr(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
 /** Returns `weeksBack` columns of 7 days (Mon–Sun), ending on the current week. */
 export function computeActivityHeatmap(
   activities: ActivityStatInput[],
@@ -165,7 +163,7 @@ export function computeActivityHeatmap(
 
   const currentWeekStart = getWeekStart(getISOWeekKey(today));
   const gridStart = addDays(currentWeekStart, -7 * (weeksBack - 1));
-  const todayStr = toDateStr(today);
+  const todayStr = formatLocalDate(today);
 
   const nonZero = Array.from(kmByDate.values()).filter((v) => v > 0).sort((a, b) => a - b);
   const quantile = (p: number) =>
@@ -174,12 +172,18 @@ export function computeActivityHeatmap(
   const t2 = quantile(0.5);
   const t3 = quantile(0.75);
 
+  // Check from the highest threshold down using `>=`. This matters when training volume is
+  // consistent (e.g. always exactly 5km): with equal thresholds (t1 === t2 === t3), a `<=`
+  // check from the bottom would always match the *first* (lightest) bucket, making every
+  // single logged run render as the faintest color no matter how consistent the streak is.
+  // `>=` from the top instead sends ties into the *highest* bucket, so a uniform daily
+  // distance correctly renders as fully "hot" instead of collapsing to the lightest shade.
   function levelFor(km: number): 0 | 1 | 2 | 3 | 4 {
     if (km <= 0) return 0;
-    if (km <= t1) return 1;
-    if (km <= t2) return 2;
-    if (km <= t3) return 3;
-    return 4;
+    if (km >= t3) return 4;
+    if (km >= t2) return 3;
+    if (km >= t1) return 2;
+    return 1;
   }
 
   const weeks: HeatmapDay[][] = [];
@@ -188,7 +192,7 @@ export function computeActivityHeatmap(
     const days: HeatmapDay[] = [];
     for (let d = 0; d < 7; d++) {
       const date = addDays(weekStart, d);
-      const dateStr = toDateStr(date);
+      const dateStr = formatLocalDate(date);
       const isFuture = date > today;
       const km = isFuture ? 0 : kmByDate.get(dateStr) ?? 0;
       days.push({ date, dateStr, km, level: isFuture ? 0 : levelFor(km), isFuture, isToday: dateStr === todayStr });
@@ -211,12 +215,12 @@ export interface PersonalRecord {
 
 const PR_CATEGORY_ORDER = ["5K", "10K", "Half Marathon", "Marathon", "Ultramarathon"];
 
-function categoryFor(km: number): { label: string; km: number } {
-  if (km >= 75) return { label: "Ultramarathon", km };
-  if (km >= 40) return { label: "Marathon", km: 42.195 };
-  if (km >= 19) return { label: "Half Marathon", km: 21.0975 };
-  if (km >= 8) return { label: "10K", km: 10 };
-  return { label: "5K", km };
+/** Groups a race distance into one of the standard PR buckets, using `distanceLabel` as the
+ * single source of truth for thresholds. Anything below the "10K" boundary (including custom
+ * short distances) buckets into "5K" so every race lands in exactly one of the 5 categories. */
+function prCategory(km: number): string {
+  const label = distanceLabel(km);
+  return PR_CATEGORY_ORDER.includes(label) ? label : "5K";
 }
 
 export function computePersonalRecords(
@@ -225,11 +229,11 @@ export function computePersonalRecords(
   const best = new Map<string, PersonalRecord>();
   for (const r of races) {
     if (!r.finishTime) continue;
-    const cat = categoryFor(r.distanceKm);
-    const existing = best.get(cat.label);
+    const category = prCategory(r.distanceKm);
+    const existing = best.get(category);
     if (!existing || r.finishTime < existing.finishTimeSec) {
-      best.set(cat.label, {
-        category: cat.label,
+      best.set(category, {
+        category,
         km: r.distanceKm,
         raceName: r.name,
         date: r.date,

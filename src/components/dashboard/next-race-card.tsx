@@ -1,16 +1,7 @@
 import Link from "next/link";
 import { Flag, ChevronRight } from "lucide-react";
-import { daysBetween, formatShortDate, type WeekPlan } from "@/lib/training-plan";
+import { daysBetween, formatShortDate, parseLocalDate, distanceLabel, type WeekPlan } from "@/lib/training-plan";
 import type { RaceGoalRecord } from "@/lib/firebase/training";
-
-function parseLocal(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function distLabel(km: number): string {
-  return km >= 42 ? "Marathon" : km >= 21 ? "Half Marathon" : km >= 10 ? "10K" : `${km} km`;
-}
 
 interface NextRaceCardProps {
   race: RaceGoalRecord;
@@ -20,7 +11,7 @@ interface NextRaceCardProps {
 }
 
 export function NextRaceCard({ race, timeline, actualByWeek, today }: NextRaceCardProps) {
-  const raceDate = parseLocal(race.date);
+  const raceDate = parseLocalDate(race.date);
   const daysLeft = daysBetween(today, raceDate);
   const raceWeeks = timeline.filter((w) => w.targetRaceId === race.id);
   const totalPlanned = raceWeeks.reduce((s, w) => s + w.plannedKm, 0);
@@ -41,7 +32,7 @@ export function NextRaceCard({ race, timeline, actualByWeek, today }: NextRaceCa
           <span className="font-mono text-lg font-bold tabular-nums leading-none text-primary">{daysLeft}d</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          {formatShortDate(raceDate)} · {distLabel(race.distanceKm)}
+          {formatShortDate(raceDate)} · {distanceLabel(race.distanceKm)}
         </p>
         {totalPlanned > 0 && (
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">

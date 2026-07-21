@@ -19,7 +19,7 @@ Firebase Auth (Google via `signInWithPopup`), Cloud Firestore, Vitest.
 
 - **Plan engine** (`src/lib/training-plan.ts`): pure TS, zero React/Firebase deps. ISO 8601 week helpers, multi-race progressive overload generator (build → taper → race → recovery), activity aggregation, formatting utils.
   - Algorithm: +10%/week build, down week (×0.75) every 4th, 2-week taper (65%→45% of peak), race week, 2 recovery weeks (50%→70% of base) before next segment.
-  - `generateTimeline(races, today, weeklyTargetOverrides)` → `WeekPlan[]`
+  - `generateTimeline(races, today, weeklyTargetOverrides, planStartDate?)` → `WeekPlan[]`. `planStartDate` anchors the first segment to when the current first *upcoming* race was added (not "today"), so the plan advances week-by-week instead of resetting on every load — see the comment above its computation in `use-training.ts` for why it's scoped to only the first upcoming race.
   - `getActualByWeek(activities)` → `Map<weekKey, km>`
 - **Firestore collections** (`src/lib/firebase/training.ts`):
   - `users/{uid}/raceGoals/{id}` — name, date, distanceKm, baseWeeklyKm

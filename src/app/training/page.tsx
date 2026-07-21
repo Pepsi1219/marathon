@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, CloudOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthUser } from "@/lib/firebase/auth";
 import { useTraining } from "@/hooks/use-training";
@@ -26,6 +26,8 @@ export default function TrainingPage() {
 
   const {
     loading,
+    error,
+    retry,
     races,
     activities,
     timeline,
@@ -61,9 +63,23 @@ export default function TrainingPage() {
   }
 
   async function handleRemoveRace(id: string) {
+    const race = races.find((r) => r.id === id);
     try {
       await removeRace(id);
-      toast.success("Race removed.");
+      toast.success("Race removed.", {
+        action: race && {
+          label: "Undo",
+          onClick: () => {
+            addRace({
+              name: race.name,
+              date: race.date,
+              distanceKm: race.distanceKm,
+              baseWeeklyKm: race.baseWeeklyKm,
+              finishTime: race.finishTime ?? null,
+            }).catch(() => toast.error("Failed to restore race."));
+          },
+        },
+      });
     } catch {
       toast.error("Failed to remove race.");
     }
@@ -80,9 +96,22 @@ export default function TrainingPage() {
   }
 
   async function handleRemoveActivity(id: string) {
+    const activity = activities.find((a) => a.id === id);
     try {
       await removeActivity(id);
-      toast.success("Activity removed.");
+      toast.success("Activity removed.", {
+        action: activity && {
+          label: "Undo",
+          onClick: () => {
+            logActivity({
+              date: activity.date,
+              distanceKm: activity.distanceKm,
+              durationSec: activity.durationSec,
+              note: activity.note,
+            }).catch(() => toast.error("Failed to restore activity."));
+          },
+        },
+      });
     } catch {
       toast.error("Failed to remove activity.");
     }
@@ -110,6 +139,8 @@ export default function TrainingPage() {
             <Skeleton className="h-32 w-full rounded-xl" />
             <Skeleton className="h-32 w-full rounded-xl" />
           </div>
+        ) : error ? (
+          <ErrorState onRetry={retry} />
         ) : races.length === 0 ? (
           <EmptyState onAdd={() => setAddRaceOpen(true)} />
         ) : (
@@ -164,6 +195,25 @@ export default function TrainingPage() {
         defaultBaseWeeklyKm={races[0]?.baseWeeklyKm}
         onAdd={handleAddRace}
       />
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border py-16 text-center">
+      <span className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <CloudOff className="size-7" />
+      </span>
+      <div className="flex flex-col gap-1">
+        <p className="font-semibold">Couldn&apos;t load your training data</p>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Check your connection and try again. Your races and activities are still saved.
+        </p>
+      </div>
+      <Button size="sm" variant="outline" onClick={onRetry}>
+        Try again
+      </Button>
     </div>
   );
 }

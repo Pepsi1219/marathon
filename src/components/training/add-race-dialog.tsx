@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatLocalDate } from "@/lib/training-plan";
 
 // ── Inline calendar ────────────────────────────────────────────────────────────
 
@@ -176,7 +177,7 @@ interface FormState {
 function toDateMin() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return formatLocalDate(d);
 }
 
 export function AddRaceDialog({ open, onOpenChange, defaultBaseWeeklyKm, onAdd }: AddRaceDialogProps) {

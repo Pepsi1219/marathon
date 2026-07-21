@@ -11,6 +11,7 @@ import {
   generateTimeline,
   getActualByWeek,
   getISOWeekKey,
+  parseLocalDate,
   type WeekPlan,
   type RaceGoalInput,
   type ActivityInput,
@@ -23,6 +24,10 @@ interface TrainingState {
   activities: ActivityRecord[];
   targets: WeeklyTargetRecord[];
   loading: boolean;
+  /** True when the last Firestore load attempt failed — distinct from "loaded, and genuinely
+   * empty". Without this, a network error looks identical to a brand-new account with no
+   * races, which reads as "my data got deleted" rather than "reload and try again". */
+  error: boolean;
 }
 
 export function useTraining() {
@@ -32,24 +37,28 @@ export function useTraining() {
     activities: [],
     targets: [],
     loading: true,
+    error: false,
   });
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     if (!user) {
-      setState({ races: [], activities: [], targets: [], loading: false });
+      setState({ races: [], activities: [], targets: [], loading: false, error: false });
       return;
     }
-    setState((s) => ({ ...s, loading: true }));
+    setState((s) => ({ ...s, loading: true, error: false }));
     Promise.all([
       listRaceGoals(user.uid),
       listActivities(user.uid),
       listWeeklyTargets(user.uid),
     ]).then(([races, activities, targets]) => {
-      setState({ races, activities, targets, loading: false });
+      setState({ races, activities, targets, loading: false, error: false });
     }).catch(() => {
-      setState((s) => ({ ...s, loading: false }));
+      setState((s) => ({ ...s, loading: false, error: true }));
     });
-  }, [user]);
+  }, [user, reloadToken]);
+
+  const retry = useCallback(() => setReloadToken((n) => n + 1), []);
 
   // ── Computed ───────────────────────────────────────────────────────────────
 
@@ -79,18 +88,23 @@ export function useTraining() {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }, []);
 
-  // Fix: anchor plan to the date the first race was added, so the chart advances week by week
+  // Anchor the plan to the date the *current* first upcoming race was added, so the chart
+  // advances week by week instead of resetting to "today" on every load. Scoped to only the
+  // race generateTimeline treats as its first segment (upcoming, earliest date) — NOT the
+  // earliest createdAt across all races ever added. Using all races would let a long-finished
+  // past race (added months/years ago) anchor a brand-new plan to that ancient date, silently
+  // regenerating months of phantom historical weeks. Same reasoning applies when the current
+  // first race is deleted: the next race in line anchors from its own createdAt, not some
+  // unrelated older race's.
   const planStartDate = useMemo(() => {
-    let earliest: Date | undefined;
-    for (const r of state.races) {
-      const ts = r.createdAt;
-      if (ts && typeof (ts as { toDate?: unknown }).toDate === "function") {
-        const d = (ts as { toDate(): Date }).toDate();
-        if (!earliest || d < earliest) earliest = d;
-      }
-    }
-    return earliest;
-  }, [state.races]);
+    const upcoming = state.races
+      .filter((r) => parseLocalDate(r.date) >= today)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const ts = upcoming[0]?.createdAt;
+    return ts && typeof (ts as { toDate?: unknown }).toDate === "function"
+      ? (ts as { toDate(): Date }).toDate()
+      : undefined;
+  }, [state.races, today]);
 
   const timeline = useMemo(
     () => generateTimeline(raceInputs, today, weeklyTargetOverrides, planStartDate),
@@ -163,6 +177,8 @@ export function useTraining() {
 
   return {
     loading: state.loading,
+    error: state.error,
+    retry,
     races: state.races,
     activities: state.activities,
     timeline,

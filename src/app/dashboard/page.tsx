@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, TrendingUp, Route, Timer, Gauge, Award, LayoutDashboard } from "lucide-react";
+import { Calendar, TrendingUp, Route, Timer, Gauge, Award, LayoutDashboard, CloudOff } from "lucide-react";
 import { useAuthUser } from "@/lib/firebase/auth";
 import { useTraining } from "@/hooks/use-training";
 import { AppHeader } from "@/components/app-header";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { WeeklyRing } from "@/components/dashboard/weekly-ring";
@@ -20,12 +21,7 @@ import {
   computePersonalRecords,
   type ActivityStatInput,
 } from "@/lib/dashboard-stats";
-import { formatDuration, formatPaceFromSec } from "@/lib/training-plan";
-
-function parseLocal(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
+import { formatDuration, formatPaceFromSec, parseLocalDate } from "@/lib/training-plan";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuthUser();
@@ -35,7 +31,7 @@ export default function DashboardPage() {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
 
-  const { loading, races, activities, timeline, currentWeek, currentWeekKey, actualByWeek, today } = useTraining();
+  const { loading, error, retry, races, activities, timeline, currentWeek, currentWeekKey, actualByWeek, today } = useTraining();
 
   const activityInputs = useMemo<ActivityStatInput[]>(
     () => activities.map((a) => ({ date: a.date, distanceKm: a.distanceKm, durationSec: a.durationSec })),
@@ -51,7 +47,7 @@ export default function DashboardPage() {
   const personalRecords = useMemo(() => computePersonalRecords(races), [races]);
 
   const nextRace = useMemo(() => {
-    const upcoming = races.filter((r) => parseLocal(r.date) >= today).sort((a, b) => a.date.localeCompare(b.date));
+    const upcoming = races.filter((r) => parseLocalDate(r.date) >= today).sort((a, b) => a.date.localeCompare(b.date));
     return upcoming[0] ?? null;
   }, [races, today]);
 
@@ -81,6 +77,8 @@ export default function DashboardPage() {
             </div>
             <Skeleton className="h-48 w-full rounded-xl" />
           </div>
+        ) : error ? (
+          <ErrorState onRetry={retry} />
         ) : !hasData ? (
           <EmptyState />
         ) : (
@@ -140,6 +138,25 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border py-16 text-center">
+      <span className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <CloudOff className="size-7" />
+      </span>
+      <div className="flex flex-col gap-1">
+        <p className="font-semibold">Couldn&apos;t load your data</p>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Check your connection and try again. Your races and activities are still saved.
+        </p>
+      </div>
+      <Button size="sm" variant="outline" onClick={onRetry}>
+        Try again
+      </Button>
     </div>
   );
 }

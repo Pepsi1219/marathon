@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Timer, Clock, Zap, Trash2, ChevronRight } from "lucide-react";
+import { Timer, Clock, Zap, Trash2, ChevronRight, CloudOff } from "lucide-react";
 import { useAuthUser } from "@/lib/firebase/auth";
-import { deletePlan, listPlans, type RacePlanRecord } from "@/lib/firebase/plans";
-import { buttonVariants } from "@/components/ui/button";
+import { deletePlan, listPlans, savePlan, applySegmentOverrides, type RacePlanRecord } from "@/lib/firebase/plans";
+import { buildSegments } from "@/lib/pace-engine";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/app-header";
 import { formatPace } from "@/lib/pace-engine";
@@ -17,6 +18,8 @@ export default function PlansPage() {
   const { user, loading: authLoading } = useAuthUser();
   const router = useRouter();
   const [plans, setPlans] = useState<RacePlanRecord[] | null>(null);
+  const [error, setError] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -24,17 +27,48 @@ export default function PlansPage() {
 
   useEffect(() => {
     if (!user) return;
-    listPlans(user.uid).then(setPlans).catch(() => {
-      toast.error("Failed to load plans");
-      setPlans([]);
-    });
-  }, [user]);
+    listPlans(user.uid)
+      .then((data) => {
+        setPlans(data);
+        setError(false);
+      })
+      .catch(() => {
+        toast.error("Failed to load plans");
+        setError(true);
+      });
+  }, [user, reloadToken]);
+
+  const retry = useCallback(() => setReloadToken((n) => n + 1), []);
 
   async function handleDelete(planId: string) {
     if (!user) return;
+    const plan = plans?.find((p) => p.id === planId);
     await deletePlan(user.uid, planId);
     setPlans((prev) => prev?.filter((p) => p.id !== planId) ?? null);
-    toast.success("Plan deleted");
+    toast.success("Plan deleted", {
+      action: plan && {
+        label: "Undo",
+        onClick: async () => {
+          try {
+            const segments = applySegmentOverrides(
+              buildSegments(plan.distanceKm, { waterEveryKm: plan.waterEveryKm, gelEveryKm: plan.gelEveryKm }),
+              plan.segmentOverrides,
+            );
+            await savePlan(
+              user.uid,
+              plan.name,
+              { startTime: plan.startTime, totalDistanceKm: plan.distanceKm, defaultPace: plan.defaultPaceSeconds },
+              segments,
+              plan.waterEveryKm,
+              plan.gelEveryKm,
+            );
+            listPlans(user.uid).then(setPlans);
+          } catch {
+            toast.error("Failed to restore plan.");
+          }
+        },
+      },
+    });
   }
 
   return (
@@ -48,14 +82,31 @@ export default function PlansPage() {
           </Link>
         </div>
 
-        {plans === null && (
+        {plans === null && !error && (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
           </div>
         )}
 
-        {plans?.length === 0 && (
+        {error && (
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border py-16 text-center">
+            <span className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <CloudOff className="size-7" />
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="font-semibold">Couldn&apos;t load your plans</p>
+              <p className="max-w-xs text-sm text-muted-foreground">
+                Check your connection and try again. Your saved plans are still there.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={retry}>
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {!error && plans?.length === 0 && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
             <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <Timer className="size-6" />
