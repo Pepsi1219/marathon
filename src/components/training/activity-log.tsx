@@ -118,7 +118,6 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
                   type="number"
                   inputMode="numeric"
                   min={0}
-                  placeholder="5"
                   value={form.paceM}
                   onChange={(e) => set("paceM", e.target.value)}
                   className="h-9 w-16 text-center tabular-nums text-sm"
@@ -132,7 +131,6 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
                   inputMode="numeric"
                   min={0}
                   max={59}
-                  placeholder="30"
                   value={form.paceS}
                   onChange={(e) => set("paceS", e.target.value)}
                   className="h-9 w-16 text-center tabular-nums text-sm"
@@ -166,8 +164,11 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
       {/* Activity history */}
       {activities.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="text-xs text-muted-foreground">{activities.length} activit{activities.length === 1 ? "y" : "ies"}</p>
-          <div className="max-h-72 overflow-y-auto rounded-xl border border-border/60 [-ms-overflow-style:none] [scrollbar-width:thin]">
+          <p className="text-xs text-muted-foreground">
+            {activities.length} activit{activities.length === 1 ? "y" : "ies"}{activities.length > 5 ? " · scroll to see all" : ""}
+          </p>
+          <div className="relative">
+            <div className="max-h-72 overflow-y-auto rounded-xl border border-border/60 [scrollbar-width:thin]">
             {activities.map((a) => {
               const pace = a.durationSec && a.distanceKm > 0
                 ? formatPaceFromSec(a.durationSec / a.distanceKm)
@@ -202,6 +203,10 @@ export function ActivityLog({ activities, onLog, onRemove }: ActivityLogProps) {
                 </div>
               );
             })}
+            </div>
+            {activities.length > 5 && (
+              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 rounded-b-xl bg-gradient-to-t from-card to-transparent" />
+            )}
           </div>
         </div>
       )}

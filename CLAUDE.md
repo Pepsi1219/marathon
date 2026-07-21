@@ -34,6 +34,18 @@ Firebase Auth (Google via `signInWithPopup`), Cloud Firestore, Vitest.
   - `ActivityLog` — quick log form (date, km, pace M:SS /km, note). Duration stored as `paceSec × distanceKm`. History in fixed-height scrollable container (`max-h-72`), shows activity count.
   - ~~`TimelineStrip`~~ — deleted; redundant with PlanChart.
 
+### Dashboard (`/dashboard`)
+
+Suunto/Garmin-style stats & summary page, built entirely from Training Tracker data (no new Firestore collections).
+
+- **Stats engine** (`src/lib/dashboard-stats.ts`): pure TS, zero React/Firebase deps.
+  - `computeOverallStats(activities, today)` → totals, this-week/this-month km, longest run, avg pace, current + best ISO-week streak.
+  - `computeWeeklyVolumeSeries(activities, timeline, today, weeksBack)` → last N weeks actual vs planned km, independent of any single race segment (unlike `PlanChart`, always ends at the current week).
+  - `computeActivityHeatmap(activities, today, weeksBack)` → GitHub-style Mon–Sun × week grid, level 0–4 bucketed by quartiles of the user's own non-zero daily km (adapts to any training volume).
+  - `computePersonalRecords(races)` → fastest finish time per distance category (5K/10K/Half/Marathon/Ultramarathon, bucketed by km) from `RaceGoalRecord.finishTime`.
+- **Components** (`src/components/dashboard/`): `StatTile` (generic KPI card), `WeeklyRing` (SVG circular progress for current week, `-rotate-90` + `strokeDasharray`/`strokeDashoffset`), `VolumeTrendChart` (bar chart with dashed target line), `ActivityHeatmap`, `PersonalRecords`, `NextRaceCard` (countdown, links to `/training`).
+- Same auth-gate pattern as `/training` (`useAuthUser` + redirect to `/login`); reuses `useTraining()` directly, no separate hook.
+
 ## Design language
 
 The app uses a clean, minimal modern SaaS aesthetic — sometimes called "Vercel-style" or "Linear-style" design.

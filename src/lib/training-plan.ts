@@ -194,6 +194,7 @@ export function generateTimeline(
   races: RaceGoalInput[],
   today: Date,
   weeklyTargetOverrides: Map<string, number>,
+  planStartDate?: Date,
 ): WeekPlan[] {
   const sorted = [...races]
     .filter((r) => parseLocalDate(r.date) >= today)
@@ -202,7 +203,9 @@ export function generateTimeline(
   if (sorted.length === 0) return [];
 
   const planMap = new Map<string, Omit<WeekPlan, "plannedKm" | "isOverridden">>();
-  let segmentStart = getWeekStart(getISOWeekKey(today));
+  // Anchor to planStartDate if it's before today (keeps the plan fixed from race-add date)
+  const anchor = planStartDate && planStartDate < today ? planStartDate : today;
+  let segmentStart = getWeekStart(getISOWeekKey(anchor));
   const baseKm = sorted[0].baseWeeklyKm;
 
   for (let r = 0; r < sorted.length; r++) {

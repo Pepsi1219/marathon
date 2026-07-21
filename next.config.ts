@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   // Silences the HMR cross-origin warning when testing from another device on the LAN
   // (e.g. a phone at 172.20.10.5). Unrelated to the Google sign-in redirect issue.
-  allowedDevOrigins: ["172.16.161.87", "192.168.137.1"],
+  allowedDevOrigins: ["172.16.161.87", "192.168.137.1", "172.20.10.5"],
 };
 
 export default nextConfig;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { PHASE_META, formatShortDate, type WeekPlan } from "@/lib/training-plan";
 
 interface PlanChartProps {
@@ -9,9 +10,20 @@ interface PlanChartProps {
 }
 
 export function PlanChart({ timeline, actualByWeek, currentWeekKey }: PlanChartProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const currentBarRef = useRef<HTMLDivElement>(null);
+
+  // Scroll the current week into the center of the chart on first render
+  useEffect(() => {
+    const container = scrollRef.current;
+    const bar = currentBarRef.current;
+    if (!container || !bar) return;
+    container.scrollLeft = bar.offsetLeft - container.offsetWidth / 2 + bar.offsetWidth / 2;
+  }, [currentWeekKey]);
+
   if (timeline.length === 0) return null;
 
-  // Start 2 weeks before current; show all remaining weeks (scrollable)
+  // Show from 2 weeks before current onwards (scrollable)
   const currentIdx = timeline.findIndex((w) => w.weekKey === currentWeekKey);
   const startIdx = Math.max(0, currentIdx >= 0 ? currentIdx - 2 : 0);
   const weeks = timeline.slice(startIdx);
@@ -28,7 +40,7 @@ export function PlanChart({ timeline, actualByWeek, currentWeekKey }: PlanChartP
         <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-6 bg-gradient-to-r from-card to-transparent" />
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-card to-transparent" />
 
-        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={scrollRef} className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex min-w-max items-end gap-1 px-2 pb-6" style={{ height: 164 }}>
           {weeks.map((week) => {
             const actual = actualByWeek.get(week.weekKey) ?? 0;
@@ -38,7 +50,12 @@ export function PlanChart({ timeline, actualByWeek, currentWeekKey }: PlanChartP
             const phase = PHASE_META[week.phase];
 
             return (
-              <div key={week.weekKey} className="flex flex-col items-center gap-0.5" style={{ width: 36 }}>
+              <div
+                key={week.weekKey}
+                ref={isCurrent ? currentBarRef : undefined}
+                className="flex flex-col items-center gap-0.5"
+                style={{ width: 36 }}
+              >
                 {/* Bars */}
                 <div className="relative flex w-full items-end justify-center gap-0.5" style={{ height: 120 }}>
                   {/* Planned bar with km label at top */}
@@ -54,13 +71,20 @@ export function PlanChart({ timeline, actualByWeek, currentWeekKey }: PlanChartP
                       style={{ height: plannedH || 2 }}
                     />
                   </div>
-                  {/* Actual bar */}
+                  {/* Actual bar with km label */}
                   {actual > 0 && (
-                    <div
-                      className="w-3 rounded-t-sm bg-primary/70 transition-all"
-                      style={{ height: actualH || 2 }}
-                      title={`Actual: ${actual.toFixed(1)} km`}
-                    />
+                    <div className="relative flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                      <span
+                        className="absolute whitespace-nowrap tabular-nums text-[8px] leading-none text-primary"
+                        style={{ bottom: (actualH || 2) + 2 }}
+                      >
+                        {actual % 1 === 0 ? actual : actual.toFixed(1)}
+                      </span>
+                      <div
+                        className="w-3 rounded-t-sm bg-primary/70 transition-all"
+                        style={{ height: actualH || 2 }}
+                      />
+                    </div>
                   )}
                 </div>
 

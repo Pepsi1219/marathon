@@ -79,9 +79,22 @@ export function useTraining() {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }, []);
 
+  // Fix: anchor plan to the date the first race was added, so the chart advances week by week
+  const planStartDate = useMemo(() => {
+    let earliest: Date | undefined;
+    for (const r of state.races) {
+      const ts = r.createdAt;
+      if (ts && typeof (ts as { toDate?: unknown }).toDate === "function") {
+        const d = (ts as { toDate(): Date }).toDate();
+        if (!earliest || d < earliest) earliest = d;
+      }
+    }
+    return earliest;
+  }, [state.races]);
+
   const timeline = useMemo(
-    () => generateTimeline(raceInputs, today, weeklyTargetOverrides),
-    [raceInputs, today, weeklyTargetOverrides],
+    () => generateTimeline(raceInputs, today, weeklyTargetOverrides, planStartDate),
+    [raceInputs, today, weeklyTargetOverrides, planStartDate],
   );
 
   const actualByWeek = useMemo(() => getActualByWeek(activityInputs), [activityInputs]);

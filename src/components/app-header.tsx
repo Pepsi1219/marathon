@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ListChecks, TrendingUp } from "lucide-react";
+import { ListChecks, TrendingUp, LayoutDashboard } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthButton } from "@/components/auth-button";
@@ -29,6 +29,10 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <Link href="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5")}>
+            <LayoutDashboard className="size-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </Link>
           <Link href="/training" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5")}>
             <TrendingUp className="size-4" />
             <span className="hidden sm:inline">Training</span>
